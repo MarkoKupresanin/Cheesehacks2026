@@ -1,0 +1,3 @@
+reedsolo
+opencv-python
+kafka-python
