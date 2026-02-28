@@ -1,3 +1,4 @@
 reedsolo
 opencv-python
 kafka-python
+numpy
