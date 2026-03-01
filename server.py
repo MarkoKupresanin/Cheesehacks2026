@@ -23,10 +23,11 @@ def decode_frame(encrypted_frame):
     try:
         nonce = repaired_blob[:12]
         encrypted_frame = repaired_blob[12:]
-        decrypted_frame = decrypt(nonce, encrypted_frame, None)
+        decrypted_frame = aesgcm.decrypt(nonce, encrypted_frame, None)
     except Exception as e2:
         print('error with decryption')
         print(e2)
+        return
 
     decrypted_frame_bytes = decrypted_frame[:-32]
     og_frame_hash = decrypted_frame[-32:]
