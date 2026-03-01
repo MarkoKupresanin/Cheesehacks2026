@@ -28,12 +28,12 @@ def decode_frame(encrypted_frame):
         print('error with decryption')
         print(e2)
 
-    frame_bytes = decrypted_frame[:-32]
+    decrypted_frame_bytes = decrypted_frame[:-32]
     og_frame_hash = decrypted_frame[-32:]
 
 
-    if (hashlib.sha256(frame_bytes).digest() == og_frame_hash):
+    if (hashlib.sha256(decrypted_frame_bytes).digest() == og_frame_hash):
         # MITM did not change data
-        send_to_redpanda(decrypted_frame, "verified_frames")
+        send_to_redpanda(decrypted_frame_bytes, "verified_frames")
     else:
         print("hashes did not match, cannot confirm validity of frame")
