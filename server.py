@@ -19,4 +19,5 @@ def decode_frame(incoming_frame, parity, original_sha256_hash):
         send_to_redpanda(decrypted_frame, "verified_frames")
     else:
         # repair based on parity bits from solomon
-        decoded = rsc.decode(decrypted_frame)
+        decode_result = rsc.decode(decrypted_frame)
+        send_to_redpanda(decode_result[0], "verified_frames")
