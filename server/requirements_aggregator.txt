@@ -1,0 +1,4 @@
+kafka-python==2.0.2
+numpy==1.24.4
+scikit-learn==1.3.2
+root@ubuntu:~/soham/f
