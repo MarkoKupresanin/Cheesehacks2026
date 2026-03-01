@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<title>AEGIS — Secure Vision Swarm</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --bg: #07090c; --surface: #0d1117; --panel: #111820; --border: #1a2535; --border2: #243040; --dim: #2e4258; --mid: #4a7090; --text: #8aafc8; --bright: #c8dce8; --white: #e8f2f8; --red: #e04444; --green: #3ecf6e; --cyan: #00e5ff; --amber: #ffb800; }
+html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: 'Share Tech Mono', monospace; overflow: hidden; }
+body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px); }
+.page { position: fixed; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.7s ease; overflow: hidden; }
+.page.active { opacity: 1; pointer-events: all; }
+.hdr { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px; border-bottom: 1px solid var(--border); position: relative; z-index: 10; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark { width: 32px; height: 32px; background: var(--panel); border: 1px solid var(--border2); display: grid; place-items: center; color: var(--bright); font-size: 12px; }
+.brand-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--white); letter-spacing: 5px; }
+.brand-sub  { font-size: 7px; color: var(--dim); letter-spacing: 3px; margin-top: 2px; }
+.hdr-right  { display: flex; align-items: center; gap: 10px; }
+.status-pill { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid; background: var(--surface); font-size: 9px; letter-spacing: 2px; }
+.status-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+/* MAIN PG */
+#pg-main { background: var(--bg); display: flex; flex-direction: column; }
+.main-body { flex: 1; display: grid; grid-template-columns: 1fr 300px; overflow: hidden; }
+.vp-col { display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+.vp-label { font-size: 8px; letter-spacing: 3px; color: var(--dim); padding: 8px 14px; border-bottom: 1px solid var(--border); }
+.viewport { flex: 1; position: relative; background: #030305; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.viewport img { width: 100%; height: 100%; object-fit: contain; }
+.viewport canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+.side { display: flex; flex-direction: column; overflow-y: auto; background: var(--panel); }
+.panel-card { border-bottom: 1px solid var(--border); padding: 14px; }
+.card-lbl   { font-size: 8px; letter-spacing: 3px; color: var(--dim); margin-bottom: 10px; }
+.slider-row { margin-bottom: 12px; }
+.sl-lbl { font-size: 9px; color: var(--text); letter-spacing: 1px; margin-bottom: 5px; }
+input[type=range] { width: 100%; accent-color: var(--cyan); }
+.gt-card .card-lbl { color: rgba(0,229,255,0.6); }
+.node-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.node-card { background: var(--surface); border: 1px solid var(--border); padding: 7px; }
+.node-card.outlier { background: #1a0808; border-color: #e0444440; }
+.nc-title  { font-size: 9px; font-weight: bold; letter-spacing: 1px; margin-bottom: 3px; }
+.graph-section { border-top: 1px solid var(--border); height: 90px; padding: 6px 12px; background: var(--surface); flex-shrink: 0; }
+#graphCanvas { width: 100%; height: 60px; display: block; }
+
+/* NOISE PG */
+#pg-noise { background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.noise-title { font-family: 'Syne', sans-serif; font-size: 48px; font-weight: 800; color: var(--red); letter-spacing: 6px; }
+.noise-bar-track { width: 320px; height: 3px; background: rgba(224,68,68,0.12); margin-top: 20px; }
+.noise-bar-fill  { height: 100%; background: var(--red); width: 0%; transition: width 3s linear; }
+
+/* ARCH PG */
+#pg-arch { background: var(--bg); display: flex; flex-direction: column; }
+.arch-feeds { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; overflow: hidden; }
+.arch-feed { display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+.af-header { padding: 10px 14px; border-bottom: 1px solid var(--border); font-family: 'Syne', sans-serif; font-weight: 800; }
+.af-viewport { flex: 1; position: relative; background: #030305; }
+.af-viewport img { width: 100%; height: 100%; object-fit: cover; }
+.af-viewport canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+.arch-bottom-bar { padding: 12px 28px; border-top: 1px solid var(--border); font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 2px;}
+
+/* CLEAN PG */
+#pg-clean { background: #000; display: flex; flex-direction: column; }
+.clean-topbar { position: absolute; top: 0; left: 0; right: 0; padding: 16px 28px; display: flex; justify-content: space-between; z-index: 10; font-family: 'Syne', sans-serif; font-weight: 800; color: var(--cyan); }
+.clean-feed { flex: 1; position: relative; }
+.clean-feed img { width: 100%; height: 100%; object-fit: contain; }
+.clean-feed canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 10; }
+.clean-bottombar { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px 28px; z-index: 10; color: var(--cyan); font-size: 11px; letter-spacing: 3px; background: rgba(0,0,0,0.8); }
+</style>
+</head>
+<body>
+
+<div id="pg-main" class="page active">
+  <div class="hdr">
+    <div class="brand"><div class="brand-mark">▲</div><div><div class="brand-name">AEGIS</div><div class="brand-sub">DASHBOARD CONNECTED</div></div></div>
+    <div class="status-pill" style="color:var(--green); border-color:var(--green)"><span class="status-dot" style="background:var(--green)"></span>LIVE TELEMETRY</div>
+  </div>
+  <div class="main-body">
+    <div class="vp-col">
+      <div class="viewport" id="main-vp">
+        <img id="main-img" src="">
+        <canvas id="main-canvas"></canvas>
+      </div>
+      <div class="graph-section">
+        <div style="font-size:8px; display:flex; justify-content:space-between;"><span style="color:var(--green)">Variance (px)</span><span style="color:var(--red)">Error Rate (%)</span></div>
+        <canvas id="graphCanvas"></canvas>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel-card gt-card">
+        <div class="card-lbl">BFT GROUND TRUTH</div>
+        <div id="gt-content" style="font-size:10px; color:var(--cyan)">Awaiting Swarm...</div>
+      </div>
+      <div class="panel-card">
+        <div class="card-lbl">SIGNAL CONTROLS</div>
+        <div class="slider-row"><div class="sl-lbl">Visual Noise <span id="noiseVal" style="color:var(--cyan)">0</span>%</div><input type="range" id="noiseSlider" min="0" max="100" value="0"></div>
+        <div class="slider-row"><div class="sl-lbl">Poison Intensity <span id="attackVal" style="color:var(--red)">0</span>px</div><input type="range" id="attackSlider" min="0" max="500" value="0"></div>
+        <div class="slider-row"><div class="sl-lbl">ECC Crypto Bit Flips <span id="flipVal" style="color:var(--amber)">0</span></div><input type="range" id="flipSlider" min="0" max="15" value="0"></div>
+      </div>
+      <div class="panel-card">
+        <div class="card-lbl">INDIVIDUAL NODES</div>
+        <div class="node-grid" id="node-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="pg-noise" class="page">
+  <div class="noise-title">NOISE DETECTED</div>
+  <div style="color:var(--red); font-size:12px; letter-spacing:3px;">Routing to BFT inference swarm...</div>
+  <div class="noise-bar-track"><div class="noise-bar-fill" id="noise-bar"></div></div>
+</div>
+
+<div id="pg-arch" class="page">
+  <div class="arch-feeds">
+    <div class="arch-feed"><div class="af-header" style="color:var(--red)">🎯 YOLOv8 (Nodes 0-3)</div><div class="af-viewport"><img id="yolo-img" src=""><canvas id="yolo-canvas"></canvas></div></div>
+    <div class="arch-feed"><div class="af-header" style="color:var(--amber)">📱 MobileNet (Nodes 4-7)</div><div class="af-viewport"><img id="mobile-img" src=""><canvas id="mobile-canvas"></canvas></div></div>
+    <div class="arch-feed"><div class="af-header" style="color:var(--cyan)">🚀 RT-DETR (Nodes 8-9)</div><div class="af-viewport"><img id="rtdetr-img" src=""><canvas id="rtdetr-canvas"></canvas></div></div>
+  </div>
+  <div class="arch-bottom-bar">7 honest · 3 malicious · 70% quorum · DBSCAN consensus</div>
+</div>
+
+<div id="pg-clean" class="page">
+  <div class="clean-topbar">AEGIS <span style="color:var(--red)">● LIVE CONSENSUS</span></div>
+  <div class="clean-feed"><img id="clean-img" src=""><canvas id="clean-canvas"></canvas></div>
+  <div class="clean-bottombar">● NOISE SUPPRESSED · GROUND TRUTH LOCKED</div>
+</div>
+
+<script>
+// --- NAVIGATION LOGIC ---
+let currentPage = 'pg-main';
+function goTo(id) { document.getElementById(currentPage).classList.remove('active'); document.getElementById(id).classList.add('active'); currentPage = id; }
+
+// --- SETTINGS LOGIC ---
+let flowTriggered = false;
+function pushSettings() {
+  const n = document.getElementById('noiseSlider').value;
+  const a = document.getElementById('attackSlider').value;
+  const f = document.getElementById('flipSlider').value;
+  document.getElementById('noiseVal').textContent = n;
+  document.getElementById('attackVal').textContent = a;
+  document.getElementById('flipVal').textContent = f;
+  
+  fetch('/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ noise_level: n/100, attack_intensity: parseInt(a), bit_flips: parseInt(f) }) });
+
+  if (parseInt(n) > 0 && !flowTriggered) {
+    flowTriggered = true;
+    goTo('pg-noise');
+    document.getElementById('noise-bar').style.width = '100%';
+    setTimeout(() => goTo('pg-arch'), 3000);
+    setTimeout(() => goTo('pg-clean'), 7000);
+    setTimeout(() => { goTo('pg-main'); flowTriggered = false; document.getElementById('noise-bar').style.width = '0%'; }, 12000);
+  }
+}
+['noiseSlider','attackSlider','flipSlider'].forEach(id => document.getElementById(id).onchange = pushSettings);
+
+// --- WEBSOCKET & RENDERING ---
+const ws = new WebSocket((location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host + '/telemetry');
+const mainCtx = document.getElementById('main-canvas').getContext('2d');
+const cleanCtx = document.getElementById('clean-canvas').getContext('2d');
+const archCtxs = { yolo: document.getElementById('yolo-canvas').getContext('2d'), mobile: document.getElementById('mobile-canvas').getContext('2d'), rtdetr: document.getElementById('rtdetr-canvas').getContext('2d') };
+
+let varHistory = [], errHistory = [];
+
+ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (!data) return;
+
+    // Apply base64 image to all screens
+    if (data.b64_image) {
+        const src = "data:image/jpeg;base64," + data.b64_image;
+        ['main-img', 'yolo-img', 'mobile-img', 'rtdetr-img', 'clean-img'].forEach(id => document.getElementById(id).src = src);
+    }
+
+    // Align canvas sizing
+    const mainImg = document.getElementById('main-img');
+    if (!mainImg.clientWidth) return; 
+
+    // Setup Main Canvas
+    const cvs = document.getElementById('main-canvas');
+    cvs.width = mainImg.clientWidth; cvs.height = mainImg.clientHeight;
+    mainCtx.clearRect(0,0,cvs.width, cvs.height);
+    const sx = cvs.width / 640; const sy = cvs.height / 480;
+
+    // Ground Truth text
+    if (data.ground_truth && data.ground_truth.length === 4) {
+        document.getElementById('gt-content').innerHTML = `BBOX: [${data.ground_truth.map(Math.round).join(', ')}]<br>VAR: ±${data.variance[0]}px<br>ERR: <span style="color:var(--red)">${data.error_rate}%</span><br>CRYPTO: ${data.crypto_status}`;
+        
+        varHistory.push(data.variance[0]); errHistory.push(data.error_rate);
+        if (varHistory.length > 50) { varHistory.shift(); errHistory.shift(); }
+        
+        // Graph
+        const gc = document.getElementById('graphCanvas'); const gCtx = gc.getContext('2d');
+        gc.width = gc.clientWidth; gc.height = gc.clientHeight;
+        gCtx.clearRect(0,0,gc.width,gc.height);
+        const step = gc.width / 50;
+        gCtx.beginPath(); gCtx.strokeStyle = '#3ecf6e'; gCtx.lineWidth = 2;
+        varHistory.forEach((v,i) => { const y = gc.height - v*2; i===0 ? gCtx.moveTo(i*step,y) : gCtx.lineTo(i*step,y); }); gCtx.stroke();
+        gCtx.beginPath(); gCtx.strokeStyle = '#e04444'; gCtx.lineWidth = 2;
+        errHistory.forEach((v,i) => { const y = gc.height - v; i===0 ? gCtx.moveTo(i*step,y) : gCtx.lineTo(i*step,y); }); gCtx.stroke();
+    }
+
+    // Draw nodes & populate grid
+    if (data.all_boxes) {
+        document.getElementById('node-grid').innerHTML = data.all_boxes.map(b => {
+            const out = b.is_outlier;
+            mainCtx.strokeStyle = out ? 'rgba(224,68,68,0.8)' : 'rgba(255,255,255,0.3)';
+            mainCtx.lineWidth = out ? 2 : 1;
+            mainCtx.strokeRect(b.bbox[0]*sx, b.bbox[1]*sy, b.bbox[2]*sx, b.bbox[3]*sy);
+            return `<div class="node-card ${out?'outlier':''}">
+                      <div class="nc-title" style="color:${out?'var(--red)':'var(--green)'}">N${b.node_id} ${b.model}</div>
+                      <div style="font-size:8px; color:var(--dim)">[${b.bbox.map(x=>Math.round(x)).join(',')}]</div>
+                    </div>`;
+        }).join('');
+    }
+
+    // Draw Ground Truth
+    if (data.ground_truth && data.ground_truth.length === 4) {
+        const gt = data.ground_truth;
+        mainCtx.strokeStyle = 'rgba(0,229,255,1)'; mainCtx.lineWidth = 3;
+        mainCtx.strokeRect(gt[0]*sx, gt[1]*sy, gt[2]*sx, gt[3]*sy);
+        
+        // Draw Clean Page GT
+        const cln = document.getElementById('clean-canvas'); cln.width = cvs.width; cln.height = cvs.height;
+        cleanCtx.clearRect(0,0,cln.width,cln.height);
+        cleanCtx.strokeStyle = '#00e5ff'; cleanCtx.lineWidth = 4;
+        cleanCtx.strokeRect(gt[0]*sx, gt[1]*sy, gt[2]*sx, gt[3]*sy);
+        
+        // Draw Arch Feeds
+        ['yolo','mobile','rtdetr'].forEach(arch => {
+            const ac = document.getElementById(`${arch}-canvas`); ac.width = cvs.width; ac.height = cvs.height;
+            const actx = archCtxs[arch]; actx.clearRect(0,0,ac.width,ac.height);
+            data.all_boxes.filter(b => b.model.includes(arch === 'mobile' ? 'mobilenet' : arch)).forEach(b => {
+                actx.strokeStyle = b.is_outlier ? 'rgba(224,68,68,0.8)' : 'rgba(255,255,255,0.6)';
+                actx.lineWidth = 2; actx.strokeRect(b.bbox[0]*sx, b.bbox[1]*sy, b.bbox[2]*sx, b.bbox[3]*sy);
+            });
+        });
+    }
+};
+</script>
+</body>
+</html>
