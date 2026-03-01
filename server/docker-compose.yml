@@ -1,0 +1,90 @@
+networks:
+  aegis_net:
+    driver: bridge
+
+volumes:
+  redpanda_data:
+
+services:
+  # ── REDPANDA (message broker) ──────────────────────────────────────────────
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: redpanda
+    networks: [aegis_net]
+    ports:
+      - "0.0.0.0:9092:9092"   # Internal Docker API
+      - "0.0.0.0:19092:19092" # External Tunnel API
+      - "9644:9644"
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp 1
+      - --memory 1G           # FIXED: Bumped to 1GB to prevent OOM crash
+      - --reserve-memory 0M
+      - --node-id 0
+      - --check=false
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://127.0.0.1:19092
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "info"]
+      interval: 10s
+      timeout: 10s          # FIXED: Given more time to respond under heavy load
+      retries: 15           # FIXED: Allow more retries during initial swarm boot
+
+
+  # ── TOPIC INITIALIZER ──────────────────────────────────────────────────────
+  topic_init:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: topic_init
+    networks: [aegis_net]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: >
+      bash -c "
+        echo 'Waiting for broker to bind port 9092...'
+        sleep 5
+        rpk topic create encrypted_streams --brokers redpanda:9092 --partitions 1 || true
+        rpk topic create verified_frames   --brokers redpanda:9092 --partitions 3 || true
+        rpk topic create swarm_telemetry   --brokers redpanda:9092 --partitions 3 || true
+        rpk topic create ground_truth      --brokers redpanda:9092 --partitions 1 || true
+        echo 'Topics created or already exist!'
+      "
+  # ── AGGREGATOR (Step 6) ────────────────────────────────────────────────────
+  aggregator:
+    build: { context: ., dockerfile: Dockerfile }
+    container_name: aggregator
+    networks: [aegis_net]
+    depends_on: [topic_init]
+    volumes:
+      - /tmp:/tmp 
+    environment:
+      REDPANDA_BROKER: redpanda:9092
+      INPUT_TOPIC:     swarm_telemetry
+      OUTPUT_TOPIC:    ground_truth
+      TOTAL_NODES:     "10"       
+      QUORUM:          "0.7"      
+      DBSCAN_EPS:      "80.0"
+      DBSCAN_MIN_SAMPLES: "3"
+      RESULTS_FILE:    /tmp/aggregator_results.json
+    command: python aggregator.py
+    restart: on-failure
+
+  # ── YOLOv8 workers (nodes 0-3) ─────────────────────────────────────────────
+  worker_0:
+    build: { context: ., dockerfile: Dockerfile }
+    container_name: worker_0
+    networks: [aegis_net]
+    depends_on: [topic_init]
+    environment: { NODE_ID: "0", MODEL_TYPE: "yolo", MALICIOUS: "false", REDPANDA_BROKER: "redpanda:9092" , INPUT_TOPIC: "encrypted_streams"}
+    restart: on-failure
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
