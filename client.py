@@ -21,7 +21,7 @@ def encrypt_frame(frame):
     frame_bytes = frame
     # Hash with SHA-256
     frame_SHA = hashlib.sha256(frame_bytes).digest()
-    print(f"HASH: {frame_SHA}")
+    print(f"Original Hash: {frame_SHA}")
 
     nonce = os.urandom(12)
 
@@ -29,7 +29,7 @@ def encrypt_frame(frame):
 
     combined_payload = rsc.encode(nonce + encrypted_frame)
 
-    return combined_payload
+    return bytes(combined_payload)
 
 def random_bit_flip_attack(data, flips = 10):
     """

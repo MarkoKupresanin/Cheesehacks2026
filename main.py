@@ -26,7 +26,16 @@ if __name__ == "__main__":
     ])
 
     e = encrypt_frame(fake_frame)
-    print(f"Combined Payload (to kafka): {e}")
-    e = random_bit_flip_attack(e, flips=32)
+#    print(f"Combined Payload (to kafka): {e}")
+    flips=600
+    print(f"Attacking with {flips} number of bit flips...")
+    e = random_bit_flip_attack(e, flips=flips)
     r = decode_frame(e)
-    print(f"Decoded payload (from kafka?): {r}")
+#    print(f"Decoded payload (from kafka?): {r}")
+
+    #print(f"fake_frame: {type(fake_frame)}")
+    #print(f"e: {type(e)}")
+    #print(f"r: {type(r)}")
+    #print(f"e==r : {e==r}")
+    #print(f"fake==e : {fake_frame == e}")
+    #print(f"fake==r : {fake_frame == r}")

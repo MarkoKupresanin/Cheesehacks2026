@@ -21,7 +21,7 @@ def decode_frame(encrypted_frame):
     try:
         repaired_blob = rsc.decode(encrypted_frame)[0]
     except ReedSolomonError as e:
-        print('error with parity check')
+#        print('error with parity check')
         print(e)
         return
 
@@ -31,13 +31,13 @@ def decode_frame(encrypted_frame):
         decrypted_frame = aesgcm.decrypt(nonce, encrypted_frame, None)
     except Exception as e2:
         print('error with decryption')
-        print(e2)
+#        print(e2)
         return
 
     decrypted_frame_bytes = decrypted_frame[:-32]
     og_frame_hash = decrypted_frame[-32:]
-    print(f"Newly Found Hash: {hashlib.sha256(decrypted_frame_bytes).digest()}")
-    print(f"OG Hash: {og_frame_hash}")
+    print(f"Hash after decryption: {hashlib.sha256(decrypted_frame_bytes).digest()}")
+    print(f"{og_frame_hash}")
 
     if (hashlib.sha256(decrypted_frame_bytes).digest() == og_frame_hash):
         # MITM did not change data
