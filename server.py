@@ -21,9 +21,15 @@ def decode_frame(encrypted_frame):
     try:
         repaired_blob = rsc.decode(encrypted_frame)[0]
     except ReedSolomonError as e:
-#        print('error with parity check')
+        ## note from marko: im 90% sure this exception occurs when the error
+        #correction is not possible and im just returning the decrypted data
+        #anyways, at least trying to and i guess we will get artificating when
+        #the frontend views the result from a frame that was too noisy
         print(e)
-        return
+        nonce = repaired_blob[:12]
+        encrypted_frame = repaired_blob[12:] 
+        decrypted_frame = aesgcm.decrypt(nonce, encrypted_frame, None)
+        return decrypted_frame ### THIS SHOULD MAYBE CHANGE BY SENDING TO KAFKA
 
     try:
         nonce = repaired_blob[:12]
