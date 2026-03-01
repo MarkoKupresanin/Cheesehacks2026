@@ -1,3 +1,4 @@
+python-dotenv
 reedsolo
 opencv-python
 kafka-python
