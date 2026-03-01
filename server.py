@@ -3,7 +3,7 @@ import hashlib
 import os
 from dotenv import load_dotenv
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from redpanda_kafka_playground import send_to_redpanda
+#from redpanda_kafka_playground import send_to_redpanda
 
 load_dotenv()
 
@@ -36,10 +36,13 @@ def decode_frame(encrypted_frame):
 
     decrypted_frame_bytes = decrypted_frame[:-32]
     og_frame_hash = decrypted_frame[-32:]
-
+    print(f"Newly Found Hash: {hashlib.sha256(decrypted_frame_bytes).digest()}")
+    print(f"OG Hash: {og_frame_hash}")
 
     if (hashlib.sha256(decrypted_frame_bytes).digest() == og_frame_hash):
         # MITM did not change data
-        send_to_redpanda(decrypted_frame_bytes, "verified_frames")
+        print("hashes match")
+        return decrypted_frame_bytes
+        #send_to_redpanda(decrypted_frame_bytes, "verified_frames")
     else:
         print("hashes did not match, cannot confirm validity of frame")

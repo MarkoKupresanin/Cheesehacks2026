@@ -17,12 +17,14 @@ def encrypt_frame(frame):
     :param frame: byte data of a single frame
     :returns: Encrypted payload for Kafka/RedPanda
     """
-    frame_bytes = frame.tobytes()
-
+    #frame_bytes = frame.tobytes()
+    frame_bytes = frame
     # Hash with SHA-256
     frame_SHA = hashlib.sha256(frame_bytes).digest()
+    print(f"HASH: {frame_SHA}")
 
     nonce = os.urandom(12)
+
     encrypted_frame = aesgcm.encrypt(nonce, frame_bytes + frame_SHA, None)
 
     combined_payload = rsc.encode(nonce + encrypted_frame)
