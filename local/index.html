@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="viewport" content="width=device-width, initial-scale=1"><title>AEGIS Camera Uplink</title>
+<style>
+  body { background: #07090c; color: #00e5ff; font-family: monospace; text-align: center; padding: 50px; }
+  button { background: #111820; color: #c8dce8; border: 2px solid #00e5ff; padding: 20px; font-size: 18px; font-weight: bold; width: 100%; cursor: pointer; transition: 0.3s;}
+  button.live { background: #0a2018; border-color: #3ecf6e; color: #3ecf6e; }
+  video { width: 100%; max-width: 400px; border: 1px solid #243040; margin-top: 20px; border-radius: 8px;}
+</style></head>
+<body>
+  <h1>AEGIS SECURE UPLINK</h1>
+  <button id="armBtn">▶ INITIATE ENCRYPTED STREAM</button>
+  <video id="video" autoplay playsinline muted></video>
+  <script>
+    document.getElementById('armBtn').onclick = async () => {
+        const btn = document.getElementById('armBtn');
+        btn.innerText = "STREAMING LIVE TO SWARM...";
+        btn.classList.add('live');
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: 640, height: 480 } });
+        document.getElementById('video').srcObject = stream;
+        const pc = new RTCPeerConnection();
+        stream.getTracks().forEach(t => pc.addTrack(t, stream));
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        const res = await fetch('/offer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sdp: pc.localDescription.sdp, type: pc.localDescription.type }) });
+        await pc.setRemoteDescription(await res.json());
+    };
+  </script>
+</body>
+</html>
