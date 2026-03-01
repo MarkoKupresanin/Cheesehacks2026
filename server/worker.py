@@ -23,7 +23,6 @@ def decode_fec(payload):
     return None, "HASH_FAIL"
 
 def main():
-    logging.info("Initializing God Mode Worker...")
     from ultralytics import YOLO
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = YOLO("yolov8n.pt").to(device)
@@ -45,7 +44,9 @@ def main():
         img = cv2.imdecode(np.frombuffer(frame_bytes, np.uint8), cv2.IMREAD_COLOR)
         if img is None: continue
         
-        res = model(img, verbose=False, classes=[0, 39, 41, 67], conf=0.40) 
+        # NO_GRAD PREVENTS MEMORY LEAKS
+        with torch.no_grad():
+            res = model(img, verbose=False, classes=[0, 39, 41, 67], conf=0.40) 
         
         if res[0].boxes and len(res[0].boxes) > 0:
             best = torch.argmax(res[0].boxes.conf).item()
@@ -63,9 +64,15 @@ def main():
 
                 payload = {"frame_id": msg.offset, "node_id": i, "model": node_model, "bbox": [bx, by, float(w), float(h)], "crypto_status": status}
                 producer.send('swarm_telemetry', value=payload)
+        else:
+            # FIX GHOST BOXES: If screen is empty, send explicit empty votes to wipe UI
+            for i in range(10):
+                node_model = "yolo" if i < 4 else "mobilenet" if i < 8 else "rtdetr"
+                producer.send('swarm_telemetry', value={"frame_id": msg.offset, "node_id": i, "model": node_model, "bbox": [], "crypto_status": status})
+                
         producer.flush()
 
-        # AGGRESSIVE GARBAGE COLLECTION PREVENTS SYSTEM HANGS
+        # AGGRESSIVE GARBAGE COLLECTION
         frames_processed += 1
         if frames_processed % 50 == 0:
             gc.collect()
