@@ -27,3 +27,21 @@ def encrypt_frame(frame):
     combined_payload = rsc.encode(nonce + encrypted_frame)
 
     return combined_payload
+
+def random_bit_flip_attack(data, flip = 10):
+    """
+    Randomly flips `flips` number of bits in the payload.
+	:param data: frame data in bytes to manipulate
+	:param flip: Number of bit flips to perform
+	:returns: Frame data that was bit-flipped
+    """
+    corrupted = bytearray(data)
+
+    for _ in range(flips):
+        byte_index = random.randint(0, len(corrupted) - 1)
+        bit_index = random.randint(0, 7)
+
+        # Flip one bit using XOR
+        corrupted[byte_index] ^= (1 << bit_index)
+
+    return bytes(corrupted)
