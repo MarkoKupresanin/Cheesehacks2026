@@ -4,6 +4,7 @@ import numpy
 import os
 from dotenv import load_dotenv
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import random
 
 load_dotenv()
 
@@ -28,7 +29,7 @@ def encrypt_frame(frame):
 
     return combined_payload
 
-def random_bit_flip_attack(data, flip = 10):
+def random_bit_flip_attack(data, flips = 10):
     """
     Randomly flips `flips` number of bits in the payload.
 	:param data: frame data in bytes to manipulate
