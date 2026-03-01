@@ -13,6 +13,11 @@ rsc = RSCodec(128)
 aesgcm = AESGCM(AES_KEY)
 
 def decode_frame(encrypted_frame):
+    """Decodes a single video frame from Kafka/RedPanda, repairs damage, and
+    validates frame hash
+    :param encrypted_frame: AES-256 encrypted frame data
+    :returns: None, data is send to Kafka/RedPanda topic
+    """
     try:
         repaired_blob = rsc.decode(encrypted_frame)[0]
     except ReedSolomonError as e:

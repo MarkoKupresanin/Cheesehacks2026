@@ -7,12 +7,15 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 load_dotenv()
 
-
 rsc = RSCodec(128)
 AES_KEY = bytes.fromhex(os.getenv("AES_KEY"))
 aesgcm = AESGCM(AES_KEY)
 
 def encrypt_frame(frame):
+    """Encrypts a single video frame via AES-256 including parity bits
+    :param frame: byte data of a single frame
+    :returns: Encrypted payload for Kafka/RedPanda
+    """
     frame_bytes = frame.tobytes()
 
     # Hash with SHA-256
