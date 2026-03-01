@@ -1,24 +1,39 @@
 from reedsolo import RSCodec, ReedSolomonError
 import hashlib
-import numpy
 import os
-from redpanda-kafka-playground import send_to_redpanda
+from dotenv import load_dotenv
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from redpanda_kafka_playground import send_to_redpanda
 
-rsc=RSCodec(10)
+load_dotenv()
 
-def decode_frame(incoming_frame, parity, original_sha256_hash):
-    nonce = incoming_frame[:12]
-    incoming_frame = incoming_frame[12:]
+AES_KEY = bytes.fromhex(os.getenv("AES_KEY"))
 
-    decrypted_frame = aesgcm.decrypt(nonce, incoming_frame)
-    incoming_frame_hash = hashlib.sha256()
-    incoming_frame_hash.update(decrypted)
+rsc = RSCodec(128)
+aesgcm = AESGCM(AES_KEY)
 
-    if (incoming_frame_hash.digest() == original_sha256_hash):
+def decode_frame(encrypted_frame):
+    try:
+        repaired_blob = rsc.decode(encrypted_frame)[0]
+    except ReedSolomonError as e:
+        print('error with parity check')
+        print(e)
+        return
+
+    try:
+        nonce = repaired_blob[:12]
+        encrypted_frame = repaired_blob[12:]
+        decrypted_frame = decrypt(nonce, encrypted_frame, None)
+    except Exception as e2:
+        print('error with decryption')
+        print(e2)
+
+    frame_bytes = decrypted_frame[:-32]
+    og_frame_hash = decrypted_frame[-32:]
+
+
+    if (hashlib.sha256(frame_bytes).digest() == og_frame_hash):
         # MITM did not change data
         send_to_redpanda(decrypted_frame, "verified_frames")
     else:
-        # repair based on parity bits from solomon
-        decode_result = rsc.decode(decrypted_frame)
-        send_to_redpanda(decode_result[0], "verified_frames")
+        print("hashes did not match, cannot confirm validity of frame")
