@@ -16,6 +16,7 @@ def decode_frame(incoming_frame, parity, original_sha256_hash):
     incoming_frame_hash.update(decrypted)
 
     if (incoming_frame_hash.digest() == original_sha256_hash):
+        # MITM did not change data
         send_to_redpanda(decrypted_frame, "verified_frames")
     else:
         # repair based on parity bits from solomon
